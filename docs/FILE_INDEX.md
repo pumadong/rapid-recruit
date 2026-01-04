@@ -285,15 +285,14 @@ psql $DATABASE_URL -c "SELECT * FROM pg_tables WHERE schemaname = 'public';"
 ---
 
 #### 2. schema.ts
-**Drizzle ORM Schema** - TypeScript 类型定义
+**⚠️ 已废弃** - 此文件已不再使用，请参考 `db/schema.ts`
 
-**特点**
-- ✅ 完整的 TypeScript 类型
-- ✅ 所有关系定义
-- ✅ 所有索引配置
-- ✅ JSDoc 注释说明
+**说明**：
+- 此文件是历史遗留文件，内容与 `db/schema.ts` 重复
+- 实际使用的 schema 文件位于 `db/schema.ts`（根目录）
+- `db/schema.ts` 包含详细的废弃说明和架构变更说明
 
-**表结构**
+**表结构**（参考 `db/schema.ts`）：
 - 基础数据表：provinces、cities、industries_level1、industries_level2、skills
 - 用户表：users、talents、companies
 - 关联表：talent_skills
@@ -301,12 +300,12 @@ psql $DATABASE_URL -c "SELECT * FROM pg_tables WHERE schemaname = 'public';"
 - 应聘表：applications
 - 审计表：audit_logs
 
-**使用方式**
+**使用方式**（已废弃，仅供参考）：
 ```typescript
-// 导入 schema
-import { users, talents, companies, jobPositions, applications } from '@/db/schema';
-import { db } from '@/lib/db';
-import { eq } from 'drizzle-orm';
+// ⚠️ 注意：以下代码已废弃，仅作为参考
+// import { users, talents, companies, jobPositions, applications } from '@/db/schema';
+// import { db } from '@/lib/db';
+// import { eq } from 'drizzle-orm';
 
 // 查询用户
 const user = await db.query.users.findFirst({
@@ -343,16 +342,17 @@ const application = await db.insert(applications).values({
 - ✅ 数据库迁移
 - ✅ ORM 代码生成
 
-**相关命令**
+**相关命令**（已废弃）
 ```bash
-# 复制到项目
-cp database/schema.ts src/db/schema.ts
+# ⚠️ 注意：以下命令已废弃，项目已切换到 Supabase SDK API 模式
+# 复制到项目（不再需要）
+# cp database/schema.ts src/db/schema.ts
 
-# 生成类型
-pnpm db:generate
+# 生成类型（不再需要）
+# pnpm db:generate
 
-# 推送迁移
-pnpm db:push
+# 推送迁移（不再需要）
+# pnpm db:push
 ```
 
 ---
@@ -569,11 +569,12 @@ cp config/.cursorrules .cursorrules
    # 复制 database/supabase_schema.sql 的全部内容
    ```
 
-3. **配置后端**
+3. **配置后端**（已废弃）
    ```bash
-   # 复制文件
-   cp database/schema.ts src/db/schema.ts
-   cp backend/backend_security_config.ts src/lib/db.ts
+   # ⚠️ 注意：以下命令已废弃，项目已切换到 Supabase SDK API 模式
+   # 复制文件（不再需要）
+   # cp database/schema.ts src/db/schema.ts
+   # cp backend/backend_security_config.ts src/lib/db.ts
    
    # 配置环境变量
    cat > .env.local << EOF
@@ -695,7 +696,7 @@ A: 确保 config/.cursorrules 已复制到项目根目录，Cursor 会自动读�
 | docs/SECURITY_BEST_PRACTICES.md | 21 KB |
 | docs/DATETIME_HANDLING_GUIDE.md | 22 KB |
 | database/supabase_schema.sql | 24 KB |
-| database/schema.ts | 14 KB |
+| ~~database/schema.ts~~ | ~~14 KB~~ | ⚠️ 已删除（与 db/schema.ts 重复） |
 | backend/backend_security_config.ts | 12 KB |
 | frontend/src_lib_datetime.ts | 11 KB |
 | config/.cursorrules | 5 KB |

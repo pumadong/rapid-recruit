@@ -53,9 +53,10 @@ kuaijie-recruitment/
 
 ### 第 2 步：后端配置（1-2 小时）
 
-1. **复制数据库 Schema**
+1. **复制数据库 Schema**（已废弃）
    ```bash
-   cp database/schema.ts src/db/schema.ts
+   # ⚠️ 注意：以下命令已废弃，项目已切换到 Supabase SDK API 模式
+   # cp database/schema.ts src/db/schema.ts
    ```
 
 2. **复制后端配置**
@@ -175,18 +176,18 @@ pnpm db:push
 ```
 
 ### database/schema.ts
-**Drizzle ORM Schema** - TypeScript 类型定义
+**⚠️ 已废弃** - 此文件已不再使用，请参考 `db/schema.ts`
 
-**特点**
-- ✅ 完整的 TypeScript 类型
-- ✅ 所有关系定义
-- ✅ 所有索引配置
-- ✅ JSDoc 注释说明
+**说明**：
+- 此文件是历史遗留文件，内容与 `db/schema.ts` 重复
+- 实际使用的 schema 文件位于 `db/schema.ts`（根目录）
+- `db/schema.ts` 包含详细的废弃说明和架构变更说明
 
-**使用方式**
+**正确的使用方式**（已废弃，仅供参考）：
 ```typescript
-import { db } from '@/lib/db';
-import { users, talents, companies } from '@/db/schema';
+// ⚠️ 注意：以下代码已废弃，仅作为参考
+// import { db } from '@/lib/db';
+// import { users, talents, companies } from '@/db/schema';
 
 // 查询用户
 const user = await db.query.users.findFirst({
@@ -325,7 +326,7 @@ if (isExpired(job.expired_at)) {
 | docs/SECURITY_BEST_PRACTICES.md | 21 KB | 安全指南 |
 | docs/DATETIME_HANDLING_GUIDE.md | 22 KB | 时间处理 |
 | database/supabase_schema.sql | 24 KB | SQL Schema |
-| database/schema.ts | 14 KB | Drizzle Schema |
+| ~~database/schema.ts~~ | ~~14 KB~~ | ⚠️ 已删除（与 db/schema.ts 重复） |
 | backend/backend_security_config.ts | 12 KB | 后端配置 |
 | frontend/src_lib_datetime.ts | 11 KB | 前端工具 |
 | config/.cursorrules | - | Cursor 规则 |

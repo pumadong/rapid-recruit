@@ -1,0 +1,886 @@
+# 快捷招聘平台 - Cursor IDE 全局规则
+
+## 项目概述
+
+项目名称: 快捷招聘平台 (Rapid Recruitment Platform)
+技术栈: Next.js 15 + React 19 + TypeScript + Tailwind CSS + Supabase + Drizzle ORM
+开发工具: Cursor IDE + pnpm
+
+---
+
+## 核心开发原则
+
+### 1. 优先使用 Server Components
+
+- 所有页面和布局默认为 Server Components
+- 仅在需要交互时使用 "use client" 指令
+- 在 Server Components 中直接查询数据库，避免不必要的 API 调用
+- 使用 Server Actions 处理表单提交和数据修改
+
+示例:
+```typescript
+// ✅ 正确 - Server Component
+export default async function JobsPage() {
+  const jobs = await getJobs();
+  return <JobList jobs={jobs} />;
+}
+
+// ✅ 正确 - Client Component（需要交互）
+"use client";
+export function JobFilter() {
+  const [filters, setFilters] = useState({});
+  return <div>...</div>;
+}
+```
+
+### 2. 类型安全第一
+
+- 为所有函数参数和返回值添加类型注解
+- 使用 Zod 进行运行时验证
+- 避免使用 any 类型
+- 利用 TypeScript 的类型推断
+
+示例:
+```typescript
+import { z } from "zod";
+
+const jobFilterSchema = z.object({
+  cityId: z.number().optional(),
+  industryId: z.number().optional(),
+});
+
+type JobFilter = z.infer<typeof jobFilterSchema>;
+
+export async function filterJobs(filters: JobFilter) {
+  // ...
+}
+```
+
+### 3. 使用 Drizzle ORM 进行数据库操作
+
+- 所有数据库操作使用 Drizzle ORM
+- 不要使用原生 SQL 或其他 ORM
+- 分离查询操作（queries/）和修改操作（mutations/）
+- 使用类型安全的查询构建器
+
+示例:
+```typescript
+// src/server/queries/jobs.ts
+import { db } from "@/lib/db";
+import { jobPositions } from "@/db/schema";
+import { eq } from "drizzle-orm";
+
+export async function getJobById(id: number) {
+  const [job] = await db
+    .select()
+    .from(jobPositions)
+    .where(eq(jobPositions.id, id));
+  return job;
+}
+```
+
+### 4. 使用 Tailwind CSS 进行样式
+
+- 优先使用 Tailwind CSS 类
+- 避免自定义 CSS 文件（除非必要）
+- 使用响应式设计前缀（sm:, md:, lg:, xl:）
+- 使用 Tailwind 的颜色系统和间距系统
+
+示例:
+```typescript
+export function JobCard({ job }: { job: JobPosition }) {
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
+      <h3 className="text-lg font-semibold text-gray-900">{job.name}</h3>
+      <p className="mt-2 text-sm text-gray-600">{job.description}</p>
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-between">
+        <span className="text-base font-medium text-green-600">
+          ¥{job.salary.min.toLocaleString()} - ¥{job.salary.max.toLocaleString()}
+        </span>
+        <button className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
+          申请职位
+        </button>
+      </div>
+    </div>
+  );
+}
+```
+
+---
+
+## 命名规范
+
+### 变量和函数 - camelCase
+
+```typescript
+const userName = "张三";
+const isLoggedIn = true;
+const maxRetries = 3;
+
+function getUserById(id: number) {}
+function calculateSalaryRange(min: number, max: number) {}
+function handleFormSubmit(e: FormEvent) {}
+```
+
+### 类和接口 - PascalCase
+
+```typescript
+class UserService {}
+interface UserProfile {}
+type JobPosition = {}
+```
+
+### 常量 - UPPER_SNAKE_CASE
+
+```typescript
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const API_BASE_URL = "https://api.example.com";
+const USER_ROLES = ["admin", "user", "guest"] as const;
+```
+
+### 文件和文件夹 - kebab-case
+
+```
+src/components/job-card.tsx
+src/hooks/use-auth.ts
+src/lib/api-client.ts
+src/types/user-profile.ts
+```
+
+### React 组件 - PascalCase
+
+```typescript
+// src/components/job-card.tsx
+export function JobCard() {
+  return <div>...</div>;
+}
+```
+
+---
+
+## Project Structure & Conventions
+
+Follow this structure for all new files and logic to ensure clear separation of concerns:
+
+### 1. Frontend (Next.js App Router)
+- **`app/`**: All routes and pages. Use Server Components by default.
+  - `(auth)/`: Authentication pages (login, register).
+  - `(dashboard)/`: Protected user/admin dashboards.
+  - `api/`: Route handlers for external webhooks or edge cases.
+- **`components/`**: React components.
+  - `v0/`: **STRICTLY** for original components imported from v0. Do not mix with custom logic.
+  - `ui/`: shadcn/ui base components (managed by CLI).
+  - `shared/`: Reusable components (buttons, cards, layouts).
+  - `features/`: Complex, domain-specific components (e.g., `job-card.tsx`, `talent-list.tsx`).
+
+### 2. Backend & Data (Supabase / Server Logic)
+- **`server/`**: Server-side logic to keep UI clean.
+  - `actions/`: Next.js Server Actions (all form submissions & mutations).
+  - `queries/`: Reusable Supabase/DB fetch logic.
+- **`lib/`**: Core configurations and third-party clients.
+  - `supabase.ts`: Supabase client initialization.
+  - `utils.ts`: Tailwind class merging and common helpers.
+- **`types/`**: TypeScript interfaces. Use `database.types.ts` for Supabase generated types.
+
+### 3. State & Styles
+- **`hooks/`**: Custom React hooks for client-side state or Supabase subscriptions.
+- **`styles/`**: Global CSS and Tailwind configurations.
+- **`public/`**: Static assets (logos, images).
+
+## Development Rules
+1. **No `src/` Directory**: All core folders (`app/`, `components/`, etc.) reside in the root.
+2. **Server Actions**: Use `use server` for all database mutations in `server/actions/`.
+3. **Data Fetching**: Prefer Server Components in `app/` using functions from `server/queries/`.
+4. **v0 Integration**: When modifying v0 components, move them from `components/v0/` to `components/features/` if adding heavy business logic.
+
+## 导入规范
+
+### 使用路径别名
+
+```typescript
+// ✅ 正确
+import { db } from "@/lib/db";
+import { getJobById } from "@/server/queries/jobs";
+import { JobCard } from "@/components/job-card";
+import type { JobPosition } from "@/types/job";
+
+// ❌ 错误
+import { db } from "../../../lib/db";
+import { getJobById } from "../../../../server/queries/jobs";
+```
+
+### 按类型分组导入
+
+```typescript
+// 1. 类型导入
+import type { ReactNode } from "react";
+
+// 2. 库导入
+import { useState } from "react";
+
+// 3. UI 组件导入
+import { Button } from "@/components/ui/button";
+
+// 4. 本地组件导入
+import { JobCard } from "@/components/job-card";
+
+// 5. 工具和类型导入
+import { db } from "@/lib/db";
+import type { JobPosition } from "@/types/job";
+```
+
+---
+
+## React 和 Next.js 最佳实践
+
+### Server Components
+
+```typescript
+// ✅ 正确 - Server Component 中直接查询
+export default async function JobsPage() {
+  const jobs = await getJobs();
+  return <JobList jobs={jobs} />;
+}
+```
+
+### Server Actions
+
+```typescript
+// ✅ 正确 - 使用 Server Actions 处理表单
+"use server";
+
+export async function publishJob(formData: FormData) {
+  const positionName = formData.get("positionName") as string;
+  const result = await db
+    .insert(jobPositions)
+    .values({ positionName })
+    .returning();
+  return result;
+}
+
+// 在 Server Component 中使用
+export default function PublishJobPage() {
+  return (
+    <form action={publishJob}>
+      <input name="positionName" />
+      <button type="submit">发布职位</button>
+    </form>
+  );
+}
+```
+
+### Client Components
+
+```typescript
+// ✅ 正确 - 仅在需要交互时使用 Client Component
+"use client";
+
+import { useState } from "react";
+
+export function JobFilter() {
+  const [filters, setFilters] = useState({});
+  return <div>...</div>;
+}
+```
+
+### React.memo 优化
+
+```typescript
+// ✅ 正确 - 对频繁重新渲染的组件使用 React.memo
+export const JobCard = React.memo(function JobCard({
+  job,
+  onApply,
+}: JobCardProps) {
+  return (
+    <div>
+      <h3>{job.name}</h3>
+      <button onClick={() => onApply(job.id)}>申请</button>
+    </div>
+  );
+});
+```
+
+### useCallback 优化
+
+```typescript
+// ✅ 正确 - 为传递给子组件的回调使用 useCallback
+"use client";
+
+import { useCallback } from "react";
+
+export function JobList() {
+  const handleApply = useCallback((jobId: number) => {
+    // 申请职位逻辑
+  }, []);
+  
+  return (
+    <div>
+      {jobs.map(job => (
+        <JobCard key={job.id} job={job} onApply={handleApply} />
+      ))}
+    </div>
+  );
+}
+```
+
+---
+
+## 数据库操作规范
+
+### 查询操作
+
+```typescript
+// src/server/queries/jobs.ts
+import { db } from "@/lib/db";
+import { jobPositions, companies } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
+
+export async function getJobById(id: number) {
+  const [job] = await db
+    .select()
+    .from(jobPositions)
+    .where(eq(jobPositions.id, id));
+  
+  if (!job) {
+    throw new NotFoundError("Job");
+  }
+  
+  return job;
+}
+
+export async function searchJobs(filters: JobFilter) {
+  const conditions = [];
+  
+  if (filters.cityId) {
+    conditions.push(eq(jobPositions.cityId, filters.cityId));
+  }
+  
+  if (filters.industryId) {
+    conditions.push(eq(jobPositions.industryLevel1Id, filters.industryId));
+  }
+  
+  return db
+    .select()
+    .from(jobPositions)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .limit(20);
+}
+```
+
+### 修改操作
+
+```typescript
+// src/server/mutations/jobs.ts
+"use server";
+
+import { db } from "@/lib/db";
+import { jobPositions } from "@/db/schema";
+import { eq } from "drizzle-orm";
+
+export async function publishJob(data: CreateJobInput) {
+  const [job] = await db
+    .insert(jobPositions)
+    .values({
+      ...data,
+      status: "published",
+      publishedAt: new Date(),
+    })
+    .returning();
+  
+  return job;
+}
+
+export async function updateJob(id: number, data: UpdateJobInput) {
+  const [job] = await db
+    .update(jobPositions)
+    .set(data)
+    .where(eq(jobPositions.id, id))
+    .returning();
+  
+  return job;
+}
+```
+
+---
+
+## 错误处理规范
+
+### 自定义错误类
+
+```typescript
+// src/lib/errors.ts
+export class AppError extends Error {
+  constructor(
+    public code: string,
+    public statusCode: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = "AppError";
+  }
+}
+
+export class NotFoundError extends AppError {
+  constructor(resource: string) {
+    super("NOT_FOUND", 404, `${resource} not found`);
+  }
+}
+
+export class UnauthorizedError extends AppError {
+  constructor() {
+    super("UNAUTHORIZED", 401, "Unauthorized");
+  }
+}
+```
+
+### API 路由中的错误处理
+
+```typescript
+// src/app/api/jobs/[id]/route.ts
+import { AppError } from "@/lib/errors";
+
+export async function GET(
+  request: Request,
+  { params }: { params: { id: string } },
+) {
+  try {
+    const job = await getJobById(parseInt(params.id));
+    return Response.json(job);
+  } catch (error) {
+    if (error instanceof AppError) {
+      return Response.json(
+        { code: error.code, message: error.message },
+        { status: error.statusCode },
+      );
+    }
+    
+    return Response.json(
+      { code: "INTERNAL_ERROR", message: "Internal server error" },
+      { status: 500 },
+    );
+  }
+}
+```
+
+---
+
+## 表单处理规范
+
+### 使用 React Hook Form + Zod
+
+```typescript
+"use client";
+
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
+const jobSchema = z.object({
+  positionName: z.string().min(1, "职位名称不能为空").max(100),
+  description: z.string().min(10, "职位描述至少10个字符").max(5000),
+  salaryMin: z.number().min(0, "最低薪资不能为负数"),
+  salaryMax: z.number().min(0, "最高薪资不能为负数"),
+});
+
+type JobFormData = z.infer<typeof jobSchema>;
+
+export function JobForm() {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<JobFormData>({
+    resolver: zodResolver(jobSchema),
+  });
+
+  const onSubmit = async (data: JobFormData) => {
+    const result = await publishJob(data);
+    // 处理结果
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <input {...register("positionName")} />
+      {errors.positionName && <span>{errors.positionName.message}</span>}
+      
+      <textarea {...register("description")} />
+      {errors.description && <span>{errors.description.message}</span>}
+      
+      <button type="submit">发布职位</button>
+    </form>
+  );
+}
+```
+
+---
+
+## 代码注释规范
+
+### JSDoc 注释
+
+```typescript
+/**
+ * 根据过滤条件搜索职位
+ * @param filters - 过滤条件
+ * @param filters.cityId - 城市ID
+ * @param filters.industryId - 行业ID
+ * @returns 匹配的职位列表
+ */
+export async function searchJobs(filters: JobFilter): Promise<JobPosition[]> {
+  // ...
+}
+```
+
+### 复杂逻辑注释
+
+```typescript
+export function calculateMatchScore(talent: Talent, job: JobPosition): number {
+  let score = 0;
+  
+  // 技能匹配度：每个匹配的技能加10分
+  const matchedSkills = talent.skills.filter(skill =>
+    job.requiredSkills.includes(skill)
+  );
+  score += matchedSkills.length * 10;
+  
+  // 工作经验匹配度：如果经验年限满足要求，加20分
+  if (talent.workExperienceYears >= job.workExperienceRequired) {
+    score += 20;
+  }
+  
+  return score;
+}
+```
+
+---
+
+## 性能优化规范
+
+### 避免不必要的重新渲染
+
+```typescript
+// ✅ 正确
+export const JobCard = React.memo(function JobCard({ job }: JobCardProps) {
+  return <div>...</div>;
+});
+
+// ❌ 错误
+export function JobCard({ job }: JobCardProps) {
+  return <div>...</div>;
+}
+```
+
+### 使用 useCallback 优化回调
+
+```typescript
+// ✅ 正确
+const handleApply = useCallback((jobId: number) => {
+  // 申请职位逻辑
+}, []);
+
+// ❌ 错误
+const handleApply = (jobId: number) => {
+  // 申请职位逻辑
+};
+```
+
+### 分页和虚拟化长列表
+
+```typescript
+// ✅ 正确 - 使用分页
+export async function getJobs(page: number = 1, limit: number = 20) {
+  const offset = (page - 1) * limit;
+  return db
+    .select()
+    .from(jobPositions)
+    .limit(limit)
+    .offset(offset);
+}
+```
+
+---
+
+## 安全规范
+
+### 认证检查
+
+```typescript
+// ✅ 正确 - 在 Server Component 中检查认证
+import { createClient } from "@/lib/supabase/server";
+
+export default async function ProtectedPage() {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    redirect("/login");
+  }
+  
+  return <div>Protected content</div>;
+}
+```
+
+### 数据验证
+
+```typescript
+// ✅ 正确 - 使用 Zod 验证用户输入
+const jobSchema = z.object({
+  positionName: z.string().min(1).max(100),
+  description: z.string().min(10).max(5000),
+  salaryMin: z.number().min(0),
+  salaryMax: z.number().min(0),
+});
+
+export async function publishJob(formData: FormData) {
+  const data = jobSchema.parse({
+    positionName: formData.get("positionName"),
+    description: formData.get("description"),
+    salaryMin: formData.get("salaryMin"),
+    salaryMax: formData.get("salaryMax"),
+  });
+  
+  // 处理数据
+}
+```
+
+### 环境变量
+
+```typescript
+// ✅ 正确 - 使用环境变量存储敏感信息
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+// ❌ 错误 - 硬编码敏感信息
+const supabaseUrl = "https://xxx.supabase.co";
+const supabaseKey = "xxx";
+```
+
+---
+
+## 测试规范
+
+### 单元测试
+
+```typescript
+// src/lib/utils.test.ts
+import { describe, it, expect } from "vitest";
+import { calculateAge } from "./utils";
+
+describe("calculateAge", () => {
+  it("should calculate age correctly", () => {
+    const birthDate = new Date("1995-01-01");
+    const age = calculateAge(birthDate);
+    expect(age).toBe(29);
+  });
+});
+```
+
+---
+
+## 代码生成指南
+
+当使用 Cursor 生成代码时，遵循以下原则:
+
+### 1. 生成 Server Components 时
+
+- 默认使用 async/await 语法
+- 直接在组件中查询数据库
+- 使用 Drizzle ORM 进行数据库操作
+- 添加错误处理
+
+```typescript
+// 生成示例
+export default async function JobsPage() {
+  try {
+    const jobs = await getJobs();
+    return <JobList jobs={jobs} />;
+  } catch (error) {
+    return <ErrorComponent error={error} />;
+  }
+}
+```
+
+### 2. 生成 Client Components 时
+
+- 添加 "use client" 指令
+- 使用 useState 和 useCallback
+- 对频繁重新渲染的组件使用 React.memo
+- 使用 React Query 获取数据
+
+```typescript
+// 生成示例
+"use client";
+
+import { useState, useCallback } from "react";
+
+export const JobFilter = React.memo(function JobFilter() {
+  const [filters, setFilters] = useState({});
+  
+  const handleFilterChange = useCallback((newFilters) => {
+    setFilters(newFilters);
+  }, []);
+  
+  return <div>...</div>;
+});
+```
+
+### 3. 生成数据库操作时
+
+- 分离查询和修改操作
+- 使用 Drizzle ORM 的类型安全查询
+- 添加错误处理和验证
+
+```typescript
+// 生成示例 - 查询
+export async function getJobById(id: number) {
+  const [job] = await db
+    .select()
+    .from(jobPositions)
+    .where(eq(jobPositions.id, id));
+  
+  if (!job) {
+    throw new NotFoundError("Job");
+  }
+  
+  return job;
+}
+
+// 生成示例 - 修改
+export async function updateJob(id: number, data: UpdateJobInput) {
+  const validated = jobUpdateSchema.parse(data);
+  
+  const [job] = await db
+    .update(jobPositions)
+    .set(validated)
+    .where(eq(jobPositions.id, id))
+    .returning();
+  
+  return job;
+}
+```
+
+### 4. 生成 UI 组件时
+
+- 使用 Tailwind CSS 进行样式
+- 使用 shadcn/ui 组件库
+- 添加响应式设计
+- 包含 TypeScript 类型
+
+```typescript
+// 生成示例
+interface JobCardProps {
+  job: JobPosition;
+  onApply?: (jobId: number) => void;
+}
+
+export function JobCard({ job, onApply }: JobCardProps) {
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
+      <h3 className="text-lg font-semibold text-gray-900">{job.name}</h3>
+      <p className="mt-2 text-sm text-gray-600">{job.description}</p>
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-between">
+        <span className="text-base font-medium text-green-600">
+          ¥{job.salary.min.toLocaleString()} - ¥{job.salary.max.toLocaleString()}
+        </span>
+        {onApply && (
+          <button
+            onClick={() => onApply(job.id)}
+            className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+          >
+            申请职位
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+```
+
+---
+
+## 常见问题和解决方案
+
+### Q: 何时使用 Server Components vs Client Components?
+
+A: 默认使用 Server Components。仅在需要以下功能时使用 Client Components:
+- 使用 useState、useEffect 等 React Hooks
+- 需要事件监听器（onClick、onChange 等）
+- 需要浏览器 API（localStorage、window 等）
+
+### Q: 如何处理表单提交?
+
+A: 使用 Server Actions 处理表单提交，避免创建 API 路由。
+
+### Q: 如何进行数据库查询?
+
+A: 在 Server Components 中直接调用查询函数，使用 Drizzle ORM。
+
+### Q: 如何处理错误?
+
+A: 使用自定义错误类，在 API 路由中统一处理错误。
+
+### Q: 如何进行性能优化?
+
+A: 使用 React.memo、useCallback、分页等技术。
+
+---
+
+## 快速参考
+
+### 快捷命令
+
+```bash
+# 安装依赖
+pnpm install
+
+# 开发服务器
+pnpm dev
+
+# 构建
+pnpm build
+
+# 类型检查
+pnpm type-check
+
+# 代码格式化
+pnpm format
+
+# 代码检查
+pnpm lint
+
+# 运行测试
+pnpm test
+
+# 数据库迁移
+pnpm db:push
+pnpm db:generate
+```
+
+### 常用文件位置
+
+- 数据库 Schema: `src/db/schema.ts`
+- 数据库查询: `src/server/queries/`
+- 数据库修改: `src/server/mutations/`
+- Server Actions: `src/server/actions/`
+- React 组件: `src/components/`
+- 类型定义: `src/types/`
+- 工具函数: `src/lib/`
+- 环境变量: `.env.local`
+
+---
+
+## 最后更新
+
+**版本**: 1.0
+**更新日期**: 2026年1月
+**维护者**: 开发团队
+
+---
+
+## 相关文档
+
+- `instruction.md` - 详细的需求文档
+- `DATABASE_DESIGN.md` - 数据库设计文档
+- `README.md` - 项目说明
+- `schema.ts` - Drizzle ORM Schema
+- `supabase_schema.sql` - Supabase SQL Schema
