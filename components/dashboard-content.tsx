@@ -95,7 +95,12 @@ export function DashboardContent() {
       }
     }
 
-    fetchUserProfile();
+    // 添加小延迟确保 localStorage 已完全加载
+    const timer = setTimeout(() => {
+      fetchUserProfile();
+    }, 100); // 延迟 100ms 确保 localStorage 已加载
+
+    return () => clearTimeout(timer);
   }, [router]);
 
   if (loading) {

@@ -20,30 +20,39 @@ export function AuthGuard({ children }: AuthGuardProps) {
 
   useEffect(() => {
     // 只在客户端执行
-    console.log("AuthGuard: Checking authentication...");
-    const token = getToken();
-    console.log("AuthGuard: Token exists:", !!token);
-    if (!token) {
-      console.log("AuthGuard: No token found, redirecting to login");
-      router.push("/login");
-      setIsAuthenticated(false);
-      return;
-    }
+    // 添加小延迟确保 localStorage 已完全加载
+    const checkAuth = () => {
+      console.log("AuthGuard: Checking authentication...");
+      const token = getToken();
+      console.log("AuthGuard: Token exists:", !!token);
+      
+      if (!token) {
+        console.log("AuthGuard: No token found, redirecting to login");
+        router.push("/login");
+        setIsAuthenticated(false);
+        return;
+      }
 
-    // 检查 token 是否有效（客户端检查，不验证签名）
-    const isValid = isTokenValid();
-    console.log("AuthGuard: Token valid:", isValid);
-    if (!isValid) {
-      console.log("AuthGuard: Token invalid or expired, redirecting to login");
-      const { removeToken } = require("@/lib/auth-client");
-      removeToken();
-      router.push("/login");
-      setIsAuthenticated(false);
-      return;
-    }
+      // 检查 token 是否有效（客户端检查，不验证签名）
+      const isValid = isTokenValid();
+      console.log("AuthGuard: Token valid:", isValid);
+      
+      if (!isValid) {
+        console.log("AuthGuard: Token invalid or expired, redirecting to login");
+        const { removeToken } = require("@/lib/auth-client");
+        removeToken();
+        router.push("/login");
+        setIsAuthenticated(false);
+        return;
+      }
 
-    console.log("AuthGuard: Token found and valid");
-    setIsAuthenticated(true);
+      console.log("AuthGuard: Token found and valid");
+      setIsAuthenticated(true);
+    };
+
+    // 延迟检查，确保 localStorage 已完全加载
+    const timer = setTimeout(checkAuth, 100);
+    return () => clearTimeout(timer);
   }, [router]);
 
   // 首次渲染时返回 null，避免 hydration mismatch

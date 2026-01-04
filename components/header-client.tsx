@@ -42,7 +42,12 @@ export function HeaderClient() {
   }, []);
 
   useEffect(() => {
-    fetchUser();
+    // 添加小延迟确保 localStorage 已完全加载
+    const timer = setTimeout(() => {
+      fetchUser();
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, [fetchUser, pathname]); // 当路径变化时重新获取用户信息
 
   // 在加载期间，显示未登录状态的 Header（不显示用户信息）

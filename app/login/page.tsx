@@ -19,7 +19,7 @@ import { useState } from "react";
 import { login } from "@/server/actions/auth";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { saveToken } from "@/lib/auth-client";
+import { saveToken, getToken } from "@/lib/auth-client";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -38,12 +38,30 @@ export default function LoginPage() {
       if (result?.success && result.token) {
         // 保存 token 到 localStorage
         saveToken(result.token);
+        
+        // 验证 token 是否已保存
+        const savedToken = getToken();
+        if (!savedToken) {
+          toast.error("Token 保存失败，请重新登录");
+          setIsLoading(false);
+          return;
+        }
+        
         toast.success("登录成功！");
         // 跳转到会员中心
         // 使用 window.location.href 强制刷新页面，确保页面完全重新加载
+        // 增加延迟确保 token 已保存到 localStorage
         setTimeout(() => {
-          window.location.href = "/dashboard";
-        }, 500);
+          // 再次验证 token 是否存在
+          const finalToken = getToken();
+          if (finalToken) {
+            window.location.href = "/dashboard";
+          } else {
+            console.error("跳转前 token 丢失，重定向到登录页");
+            toast.error("认证失败，请重新登录");
+            router.push("/login");
+          }
+        }, 800);
       } else {
         // 处理登录失败的情况
         const errorMsg = result?.error || "登录失败，请检查手机号和密码";

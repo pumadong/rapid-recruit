@@ -109,16 +109,33 @@ export function isTokenValid(): boolean {
       return false;
     }
 
-    // 检查是否过期（客户端解码，不验证签名）
-    const { decodeToken } = require("@/lib/token");
-    const decoded = decodeToken(token);
-    if (!decoded || !decoded.exp) {
+    // 客户端解码 JWT（不验证签名）
+    // JWT 格式：header.payload.signature
+    const parts = token.split(".");
+    if (parts.length !== 3) {
+      return false;
+    }
+
+    // 解码 payload（base64url 解码）
+    // 使用浏览器兼容的方式：atob() 和手动处理 base64url
+    const payload = parts[1];
+    // Base64URL 解码：将 - 替换为 +，_ 替换为 /，然后添加必要的填充
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+    
+    // 使用 atob() 解码（浏览器 API）
+    const decodedStr = atob(padded);
+    const decoded = JSON.parse(decodedStr);
+
+    // 检查是否过期
+    if (!decoded.exp) {
       return false;
     }
 
     const expirationTime = decoded.exp * 1000;
     return Date.now() < expirationTime;
-  } catch {
+  } catch (error) {
+    console.error("Error validating token:", error);
     return false;
   }
 }
